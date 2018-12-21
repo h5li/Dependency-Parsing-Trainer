@@ -1,6 +1,6 @@
 # Dependency Parser Trainer
 
-This Project is inspired by Stanford NLP Paper: A Fast and Accurate Dependency Parser using Neural Networks
+This Project is inspired by Stanford NLP Paper: [A Fast and Accurate Dependency Parser using Neural Networks](https://cs.stanford.edu/~danqi/papers/emnlp2014.pdf)
 
 Goal: We want to generate labels for wikipedia pages. One way to accomplish it is to 
 find sentences containing links to other pages. To do that, we need to explore the relationship
