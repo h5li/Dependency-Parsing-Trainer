@@ -19,7 +19,7 @@ class DataConfig:  # data, embedding, model path etc.
     data_dir_path = "./data"
     train_path = "train.conll"
     valid_path = "dev.conll"
-    test_path = "test.conll"
+    test_path = "wiki.conll"
 
     # embedding
     embedding_file = "en-cw.txt"
@@ -104,9 +104,10 @@ class Flags(Enum):
 
 
 class Token(object):
-    def __init__(self, token_id, word, pos, dep, head_id):
+    def __init__(self, token_id, word,upos, pos, dep, head_id):
         self.token_id = token_id  # token index
         self.word = word.lower() if SettingsConfig.is_lower else word
+        self.upos = pos_prefix + upos
         self.pos = pos_prefix + pos
         self.dep = dep_prefix + dep
         self.head_id = head_id  # head token index
@@ -137,14 +138,15 @@ class Token(object):
         self.predicted_head_id = None
 
 
-NULL_TOKEN = Token(-1, NULL, NULL, NULL, -1)
-ROOT_TOKEN = Token(-1, ROOT, ROOT, ROOT, -1)
-UNK_TOKEN = Token(-1, UNK, UNK, UNK, -1)
+NULL_TOKEN = Token(-1, NULL, NULL,NULL, NULL, -1)
+ROOT_TOKEN = Token(-1, ROOT, ROOT,ROOT, ROOT, -1)
+UNK_TOKEN = Token(-1, UNK, UNK,
+    UNK, UNK, -1)
 
 
 class Sentence(object):
     def __init__(self, tokens):
-        self.Root = Token(-1, ROOT, ROOT, ROOT, -1)
+        self.Root = Token(-1, ROOT, ROOT, ROOT, ROOT, -1)
         self.tokens = tokens
         self.buff = [token for token in self.tokens]
         self.stack = [self.Root]
@@ -489,8 +491,9 @@ class FeatureExtractor(object):
 
 
 class DataReader(object):
-    def __init__(self):
-        print "A"
+    def __init__(self, test):
+        self.test = test
+        print "Start Reading Data"
 
 
     def read_conll(self, token_lines):
@@ -499,10 +502,11 @@ class DataReader(object):
             fields = each.strip().split("\t")
             token_index = int(fields[0]) - 1
             word = fields[1]
+            upos = fields[3]
             pos = fields[4]
             dep = fields[7]
-            head_index = int(fields[6]) - 1
-            token = Token(token_index, word, pos, dep, head_index)
+            head_index = int(fields[6]) - 1 if not self.test else -1
+            token = Token(token_index, word, upos, pos, dep, head_index)
             tokens.append(token)
         sentence = Sentence(tokens)
 
@@ -514,6 +518,8 @@ class DataReader(object):
         data_objects = []
         token_lines = []
         for token_conll in data_lines:
+            if token_conll[0] == '#':
+                continue
             token_conll = token_conll.strip()
             if len(token_conll) > 0:
                 token_lines.append(token_conll)
@@ -525,10 +531,10 @@ class DataReader(object):
         return data_objects
 
 
-def load_datasets(load_existing_dump=False):
+def load_datasets(load_existing_dump=False, test = False):
     model_config = ModelConfig()
 
-    data_reader = DataReader()
+    data_reader = DataReader(test)
     train_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.train_path), "r").readlines()
     valid_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.valid_path), "r").readlines()
     test_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.test_path), "r").readlines()
