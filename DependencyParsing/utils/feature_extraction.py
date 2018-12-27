@@ -19,7 +19,7 @@ class DataConfig:  # data, embedding, model path etc.
     data_dir_path = "./data"
     train_path = "train.conll"
     valid_path = "dev.conll"
-    test_path = "wiki.conll"
+    test_path = "test.conll"
 
     # embedding
     embedding_file = "en-cw.txt"
@@ -140,8 +140,7 @@ class Token(object):
 
 NULL_TOKEN = Token(-1, NULL, NULL,NULL, NULL, -1)
 ROOT_TOKEN = Token(-1, ROOT, ROOT,ROOT, ROOT, -1)
-UNK_TOKEN = Token(-1, UNK, UNK,
-    UNK, UNK, -1)
+UNK_TOKEN = Token(-1, UNK, UNK, UNK, UNK, -1)
 
 
 class Sentence(object):
@@ -491,8 +490,8 @@ class FeatureExtractor(object):
 
 
 class DataReader(object):
-    def __init__(self, test):
-        self.test = test
+    def __init__(self, generate):
+        self.generate = generate
         print "Start Reading Data"
 
 
@@ -505,7 +504,7 @@ class DataReader(object):
             upos = fields[3]
             pos = fields[4]
             dep = fields[7]
-            head_index = int(fields[6]) - 1 if not self.test else -1
+            head_index = int(fields[6]) - 1 if not self.generate else -2
             token = Token(token_index, word, upos, pos, dep, head_index)
             tokens.append(token)
         sentence = Sentence(tokens)
@@ -531,10 +530,12 @@ class DataReader(object):
         return data_objects
 
 
-def load_datasets(load_existing_dump=False, test = False):
+def load_datasets(load_existing_dump=False, generate = False):
     model_config = ModelConfig()
 
-    data_reader = DataReader(test)
+    data_reader = DataReader(generate)
+    if generate:
+        DataConfig.test_path = "wiki.conll"
     train_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.train_path), "r").readlines()
     valid_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.valid_path), "r").readlines()
     test_lines = open(os.path.join(DataConfig.data_dir_path, DataConfig.test_path), "r").readlines()

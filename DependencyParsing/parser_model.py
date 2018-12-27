@@ -305,7 +305,7 @@ class ParserModel(Model):
         [sentence.clear_children_info() for sentence in sentences]
 
 
-        f = open(DataConfig.data_dir_path + "/wiki_parsed.conll", "w+")
+        f = open(os.path.join(DataConfig.data_dir_path, "parsed_"+DataConfig.test_path), "w+" )
 
         while len(rem_sentences) != 0:
             curr_batch_size = min(dataset.model_config.batch_size, len(rem_sentences))
@@ -352,12 +352,18 @@ class ParserModel(Model):
 
             # Copy The prediction dependencies to dependencies of sentence
             for sentence in batch_sentences:
-                sentence.dependencies = list(sentence.predicted_dependencies)
+                #sentence.dependencies = list(sentence.predicted_dependencies)
+
+                head = [-2] * len(sentence.tokens)
+                # assert len(sentence.dependencies) == len(sentence.predicted_dependencies)
+                for h, t, in sentence.predicted_dependencies:
+                    head[t.token_id] = h.token_id
+
                 f.write("\n")
                 for token in sentence.tokens:
                     f.write("{0}\t{1}\t_\t{2}\t{3}\t_\t{4}\t{5}\t_\t_\n".format(token.token_id+1,\
                         token.word,token.upos[len(pos_prefix):],token.pos[len(pos_prefix):],\
-                        token.head_id+1,token.dep[len(dep_prefix):]))
+                        head[token.token_id]+1,token.dep[len(dep_prefix):]))
 
             # Reset stack and buffer
             [sentence.reset_to_initial_state() for sentence in batch_sentences]
@@ -440,11 +446,11 @@ def highlight_string(temp):
     print 80 * "="
 
 
-def main(flag, load_existing_dump=False):
+def main(flag, generate, load_existing_dump=False):
     highlight_string("INITIALIZING")
     print "loading data.."
 
-    dataset = load_datasets(load_existing_dump,flag == Flags.TEST)
+    dataset = load_datasets(load_existing_dump, generate )
     config = dataset.model_config
 
     print "word vocab Size: {}".format(len(dataset.word2idx))
@@ -530,8 +536,9 @@ def main(flag, load_existing_dump=False):
                 saver.restore(sess, ckpt_path)
                 highlight_string("Testing")
                 model.compute_and_save_dependencies(sess, dataset.test_data, dataset)
-                #test_UAS = model.get_UAS(dataset.test_data)
-                #print "test UAS: {}".format(test_UAS * 100)
+                if not generate:
+                    test_UAS = model.get_UAS(dataset.test_data)
+                    print "test UAS: {}".format(test_UAS * 100)
                 # model.run_valid_epoch(sess, dataset.valid_data, dataset)
                 # valid_UAS = model.get_UAS(dataset.valid_data)
                 # print "valid UAS: {}".format(valid_UAS * 100)
@@ -551,4 +558,4 @@ def main(flag, load_existing_dump=False):
 
 
 if __name__ == '__main__':
-    main(Flags.TEST, load_existing_dump=True)
+    main(Flags.TEST, generate = True, load_existing_dump=True)
